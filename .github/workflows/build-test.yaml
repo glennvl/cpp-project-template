@@ -1,0 +1,117 @@
+name: Build and Test
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+env:
+  GHCR_URL_WITH_UPPERCASE: ghcr.io/${{ github.repository }}
+jobs:
+  build-devcontainer-image:
+    name: Build devcontainer
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Convert GHCR url to lower case
+        run: echo "GHCR_URL=${GHCR_URL_WITH_UPPERCASE@L}" >> ${GITHUB_ENV}
+      - name: Login to Github Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pre-build devcontainer image
+        uses: devcontainers/ci@v0.3
+        with:
+          imageName: ${{ env.GHCR_URL }}
+          cacheFrom: ${{ env.GHCR_URL }}
+          push: always
+  make-release-build:
+    name: Make release build
+    needs: build-devcontainer-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Convert GHCR url to lower case
+        run: echo "GHCR_URL=${GHCR_URL_WITH_UPPERCASE@L}" >> ${GITHUB_ENV}
+      - name: Login to Github Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make release build
+        uses: devcontainers/ci@v0.3
+        with:
+          cacheFrom: ${{ env.GHCR_URL }}
+          push: never
+          runCmd: |
+            cmake --preset clang-release
+            cmake --build --preset clang-release-build
+  make-debug-build:
+    name: Make debug build
+    needs: build-devcontainer-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Convert GHCR url to lower case
+        run: echo "GHCR_URL=${GHCR_URL_WITH_UPPERCASE@L}" >> ${GITHUB_ENV}
+      - name: Login to Github Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make debug build
+        uses: devcontainers/ci@v0.3
+        with:
+          cacheFrom: ${{ env.GHCR_URL }}
+          push: never
+          runCmd: |
+            cmake --preset clang-debug
+            cmake --build --preset clang-debug-build
+      - name: Archive debug build
+        run: tar cf clang-debug.tar build/clang-debug
+      - name: Upload debug build artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: clang-debug-build
+          path: clang-debug.tar
+          retention-days: 1
+          include-hidden-files: true
+  run-tests:
+    name: Run tests
+    needs: make-debug-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+      - name: Convert GHCR url to lower case
+        run: echo "GHCR_URL=${GHCR_URL_WITH_UPPERCASE@L}" >> ${GITHUB_ENV}
+      - name: Login to Github Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download debug build artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: clang-debug-build
+      - name: Extract debug build
+        run: tar xf clang-debug.tar
+      - name: Run tests
+        uses: devcontainers/ci@v0.3
+        with:
+          cacheFrom: ${{ env.GHCR_URL }}
+          push: never
+          runCmd: |
+            ctest --preset clang-debug-test
