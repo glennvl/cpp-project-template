@@ -10,6 +10,7 @@ macro(cpprog_init)
 endmacro()
 
 macro(cpprog_configure_project)
+    _cpprog_check_compiler_supported()
     _cpprog_clion_clangd_workaround()
     _cpprog_enable_testing()
 endmacro()
@@ -60,6 +61,12 @@ endmacro()
 
 function(_cpprog_generate_debuginit)
     configure_file("${CMAKE_SOURCE_DIR}/lldbinit.in" "${CMAKE_SOURCE_DIR}/.lldbinit")
+endfunction()
+
+function(_cpprog_check_compiler_supported)
+    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        message(FATAL_ERROR "Compiler ${CMAKE_CXX_COMPILER_ID} is not supported!")
+    endif()
 endfunction()
 
 function(_cpprog_clion_clangd_workaround)
