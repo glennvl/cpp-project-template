@@ -4,7 +4,7 @@
 
 Basic C and C++ devcontainer with cmake, compiler warnings, clang-tidy and clang-format.
 
-## Installed tools
+### Installed tools
 
 * ccache
 * clang
