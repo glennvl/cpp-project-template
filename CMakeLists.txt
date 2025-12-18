@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 4.2 FATAL_ERROR)
 
-# workaround clang bug
-set(CMAKE_CXX_STDLIB_MODULES_JSON "/usr/lib/llvm-21/lib/libc++.modules.json")
-
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/cpprog.cmake")
 
 cpprog_init()
