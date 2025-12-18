@@ -21,6 +21,7 @@
             "hidden": true,
             "inherits": "vcpkg",
             "cacheVariables": {
+                "CMAKE_CXX_STDLIB_MODULES_JSON": "/usr/lib/llvm-21/lib/libc++.modules.json",
                 "VCPKG_TARGET_TRIPLET": "x64-linux-clang-libcxx",
                 "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/x64-linux-clang-libcxx.toolchain.cmake"
             }
